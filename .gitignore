@@ -1,0 +1,8 @@
+*.pyc
+*.swp
+test_1.py
+stuff
+*.png
+*.dot
+dist
+build

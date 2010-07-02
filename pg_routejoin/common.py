@@ -6,7 +6,7 @@ class PathError(Exception):
   pass
 
 
-class MissingNode(Exception):
+class MissingNodeError(Exception):
   """
   a referenced node is missing in the graph
   """
@@ -15,6 +15,11 @@ class MissingNode(Exception):
 
   def __str__(self):
     return "Node %d in not in the graph" % self.node
+
+
+class NotEnoughNodesError(Exception):
+  def __str__(self):
+    return "need at least two nodes to join someting"
 
 
 class RoutingError(Exception):

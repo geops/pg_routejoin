@@ -28,7 +28,7 @@ def shortest_path(G, start, end):
         return list(flatten(path))[::-1] + [v1]
       path = (v1, path)
       if not G.has_key(v1):
-        raise MissingNode(v1)
+        raise MissingNodeError(v1)
       else:
         for (v2, cost2) in G[v1].iteritems():
           if v2 not in visited:

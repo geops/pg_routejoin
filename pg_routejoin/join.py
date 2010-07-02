@@ -28,40 +28,25 @@ class BaseJoin(object):
     # ignore the join type on this comparisson
     return ((self.table_1 == other.table_1 and 
             self.table_schema_1 == other.table_schema_1 and
-            self.table_columns_1 == other.table_columns_1) or
+            self.table_columns_1 == other.table_columns_1 and
+            self.table_2 == other.table_2 and 
+            self.table_schema_2 == other.table_schema_2 and
+            self.table_columns_2 == other.table_columns_2) or
            (self.table_1 == other.table_2 and 
             self.table_schema_1 == other.table_schema_2 and
-            self.table_columns_1 == other.table_columns_2))
+            self.table_columns_1 == other.table_columns_2 and
+            self.table_2 == other.table_1 and 
+            self.table_schema_2 == other.table_schema_1 and
+            self.table_columns_2 == other.table_columns_1))
 
-
-  def __hash__(self):
-    """
-    a hacky hash implementation to allow
-    usage in sets
-    should be fine for most cases, need to find
-    somethib better, though.
-    """
-    vals = [self.table_1,
-      self.table_2,
-      self.table_schema_1,
-      self.table_schema_2,
-      str(self.table_columns_1),
-      str(self.table_columns_2)
-      ]
-    vals.sort();
-    h = long(0)
-    i = long(1)
-    for c in str(vals):
-      h += long(ord(c)*i)
-      i+=1
-    return int(h/i)
-
+  def __ne__(self, other):
+    return not self.__eq__(other)
 
   def toSql(self, is_first=False):
     sql = ""
     # include the table after "FROM " when is_first is true
     if is_first:
-      sql += "\"%s\".\"%s\" " % (self.table_schema_1, self.table_1)
+      sql += "\"%s\".\"%s\"" % (self.table_schema_1, self.table_1)
 
     sql += " %s \"%s\".\"%s\" on " % (
       self.join_type, 

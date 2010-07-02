@@ -21,8 +21,9 @@ def route_network(G, nodes=[]):
   if nodes_len < 2:
     raise common.NotEnoughNodesError()
   else:
-    for i in range(2, nodes_len):
-      route = dijkstra.shortest_path(G, nodes[i-1], nodes[i])
+    last_node = nodes[0]
+    for next_node in nodes[1:]:
+      route = dijkstra.shortest_path(G, last_node, next_node)
       
       # reduce the routing costs for the nodes of
       # this route in the graph, to get the following
@@ -31,6 +32,7 @@ def route_network(G, nodes=[]):
         for neighbor in G[node].iterkeys():
           # reduce the cost by 50%
           G[neighbor][node] = int(G[neighbor][node]/2)
+      last_node = next_node
 
       routes.append(route)
   return routes

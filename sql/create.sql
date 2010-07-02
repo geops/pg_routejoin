@@ -174,7 +174,7 @@ except Exception, e:
 
 $$ language plpythonu;
 alter function  public.routejoin_vizz(oid[]) owner to postgres;
-grant all on function public.routejoin_vizz(oid[]) to public;
+grant execute on function public.routejoin_vizz(oid[]) to public;
 
 
 
@@ -288,7 +288,19 @@ except Exception, e:
 
 $$ language plpythonu;
 alter function  public.routejoin_route(oid[]) owner to postgres;
-grant all on function public.routejoin_route(oid[]) to public;
+grant execute on function public.routejoin_route(oid[]) to public;
+
+
+
+create or replace function public.routejoin_version() 
+returns text 
+as $$
+from pg_routejoin import __version__
+
+return __version__
+$$ language plpythonu;
+alter function  public.routejoin_version() owner to postgres;
+grant execute on function public.routejoin_version() to public;
 
 
 commit;

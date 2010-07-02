@@ -1,5 +1,6 @@
 begin;
 
+drop view if exists public.routejoin_oidlookup;
 drop view if exists public.routejoin_routes;
 drop table if exists public.routejoin_userdefined;
 drop view if exists public.routejoin_constraints;

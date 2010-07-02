@@ -122,6 +122,21 @@ and public.routejoin_userdefined, which get used by the routing functions.';
 grant select on public.routejoin_routes to public;
 
 
+create or replace view public.routejoin_oidlookup as
+select distinct
+  t_pk_oid as oid,
+  t_pk_table as "table",
+  t_pk_schema as "schema"
+from public.routejoin_routes 
+union
+select 
+  t_fk_oid as oid,
+  t_fk_table as "table",
+  t_fk_schema as "schema"
+from public.routejoin_routes;
+grant select on public.routejoin_oidlookup to public;
+
+
 create or replace function public.routejoin_vizz(table_oids_in oid[]) 
 returns text 
 as $$

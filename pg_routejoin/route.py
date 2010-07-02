@@ -1,4 +1,4 @@
-from pg_routejoin import dijkstra
+from pg_routejoin import dijkstra, common
 
 
 def route_network(G, nodes=[]):
@@ -13,10 +13,13 @@ def route_network(G, nodes=[]):
   nodes_len = len(nodes)
   routes = []
 
-  if not nodes_len:
-    routes = []
-  elif nodes_len == 1:
-    routes = [nodes]
+  # be sure all nodes exists
+  for node in nodes:
+    if not G.has_key(node):
+      raise common.MissingNodeError(node)
+
+  if nodes_len < 2:
+    raise common.NotEnoughNodesError()
   else:
     for i in range(2, nodes_len):
       route = dijkstra.shortest_path(G, nodes[i-1], nodes[i])

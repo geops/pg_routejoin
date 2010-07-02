@@ -217,7 +217,6 @@ for row in defined_routes:
 
 try:
   routes =  route.route_network(G, table_oids)
-  plpy.notice(routes)
 
   # using a set would be nice, but a set reorders its contents
   joins = []
@@ -274,7 +273,6 @@ try:
 
         last_node = next_node
 
-  plpy.notice(joins)
   # build the join sql
   sql = StringIO.StringIO()
   if len(joins) > 0:

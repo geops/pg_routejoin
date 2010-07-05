@@ -5,15 +5,21 @@ class Table(object):
     self.schema = schema
     self.jointype = None
 
-    # a list do collect joins
-    # format (('tablex.col1', 'tabley.col2'), ('tablex.col2', 'tabley.col2'))
-    self.joins = []
+    # a set do collect joins
+    self.joins = set()
 
   def __eq__(self, other):
     return (self.name == other.name and self.schema == other.schema)
 
   def __ne__(self, other):
     return not self.__eq__(other)
+
+  def add_join(self, cols1, cols2):
+    join_cols = zip(cols1, cols2)
+    for join_col in join_cols:
+      join_col = list(join_col)
+      join_col.sort() # sort them to make the set unique
+      self.joins.add(tuple(join_col))
 
   @property
   def fullname(self):
@@ -35,5 +41,6 @@ class Table(object):
 
   @property
   def joinsql(self):
-    joined_columns = map(lambda x: " = ".join(x), self.joins)
+    joinlist = list(self.joins)
+    joined_columns = map(lambda x: " = ".join(x), joinlist)
     return "%s %s on %s" % (self.jointype if self.jointype!=None else "join", self.fullname, ' and '.join(joined_columns))

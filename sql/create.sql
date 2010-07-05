@@ -274,7 +274,7 @@ try:
 
             # always add the conditions to the last table, to avoid
             # joins without conditions
-            tables[max(from_table_pos,to_table_pos)].joins += zip(to_cols, from_cols)
+            tables[max(from_table_pos,to_table_pos)].add_join(to_cols, from_cols)
 
             # set the join type,
             if row["left_join"] == True and tables[max(from_table_pos,to_table_pos)].jointype != "join": 

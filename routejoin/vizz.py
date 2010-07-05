@@ -1,4 +1,4 @@
-from pg_routejoin.route import route_network
+from routejoin.route import route_network
 import StringIO
 
 

@@ -1,4 +1,4 @@
-from pg_routejoin.common import *
+from routejoin.common import *
 import heapq
 
 def shortest_path(G, start, end):

@@ -2,7 +2,7 @@
 
 from distutils.core import setup, Extension, Command
 from unittest import TextTestRunner, TestLoader
-from pg_routejoin import __version__ as versionstring
+from routejoin import __version__ as versionstring
 
 class TestCommand(Command):
   user_options = []
@@ -20,8 +20,8 @@ class TestCommand(Command):
     t.run(loader.loadTestsFromModule(tests))
 
 
-setup(name="pg_routejoin",
+setup(name="routejoin",
   version=versionstring,
-  packages=['pg_routejoin'],
+  packages=['routejoin'],
   cmdclass = {"test": TestCommand})
 

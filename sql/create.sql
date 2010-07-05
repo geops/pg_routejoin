@@ -58,6 +58,7 @@ public.routejoin_userdefined.
 ';
 
 create table public.routejoin_userdefined (
+  ru_id serial primary key,
   t_pk_schema name,
   t_pk_table name,
   t_pk_columns name[],
@@ -87,7 +88,17 @@ grant select on public.routejoin_userdefined to public;
 
 
 create or replace view public.routejoin_routes as
-select rc.*, 100::integer as routing_cost, False as left_join 
+select 
+  rc.t_pk_oid, 
+  rc.t_pk_table,
+  rc.t_pk_schema,
+  rc.t_pk_columns,
+  rc.t_fk_oid,
+  rc.t_fk_table,
+  rc.t_fk_schema,
+  rc.t_fk_columns,
+  100::integer as routing_cost, 
+  False as left_join 
 from public.routejoin_constraints rc
 left join public.routejoin_userdefined ru on
   ru.t_pk_schema = rc.t_pk_schema and
@@ -96,8 +107,8 @@ left join public.routejoin_userdefined ru on
   ru.t_fk_schema = rc.t_fk_schema and
   ru.t_fk_table = rc.t_fk_table and
   ru.t_fk_columns = rc.t_fk_columns
-where ru.action is null or ru.action = 'add'
-union
+where ru.action is null
+union 
 select 
   pcpk.oid as t_pk_oid,
   ru.t_pk_table,
@@ -107,7 +118,6 @@ select
   ru.t_fk_table,
   ru.t_fk_schema,
   ru.t_fk_columns,
-  NULL::name as conname,
   ru.routing_cost,
   ru.left_join
 from public.routejoin_userdefined ru
@@ -140,7 +150,7 @@ grant select on public.routejoin_oidlookup to public;
 create or replace function public.routejoin_vizz(table_oids_in oid[]) 
 returns text 
 as $$
-from pg_routejoin import vizz
+from routejoin import vizz
 
 if type(table_oids_in) == str:
   # at this point plpython does not seem to have native array support
@@ -181,7 +191,7 @@ grant execute on function public.routejoin_vizz(oid[]) to public;
 create or replace function public.routejoin_route(table_oids_in oid[]) 
 returns text 
 as $$
-from pg_routejoin import route, join 
+from routejoin import route, table 
 import StringIO
 
 
@@ -220,7 +230,7 @@ try:
 
   # using a set would be nice, but a set reorders its contents
   joins = []
-  included_nodes = []
+  tables = []
 
   for route in routes:
     if len(route)>1: # should always be the case
@@ -236,50 +246,56 @@ try:
 
             # keep the order of the tables in the join
             if last_node == t_pk_oid:
-              t_from_table  = row["t_pk_table"]
-              t_from_schema = row["t_pk_schema"]
+              t_from_table  = table.Table(row["t_pk_table"], row["t_pk_schema"])
               t_from_columns = sanitize_pg_array(row["t_pk_columns"])
-              t_to_table  = row["t_fk_table"]
-              t_to_schema = row["t_fk_schema"]
+              t_to_table  = table.Table(row["t_fk_table"], row["t_fk_schema"])
               t_to_columns = sanitize_pg_array(row["t_fk_columns"])
             else:
-              t_from_table  = row["t_fk_table"]
-              t_from_schema = row["t_fk_schema"]
+              t_from_table  = table.Table(row["t_fk_table"], row["t_fk_schema"])
               t_from_columns = sanitize_pg_array(row["t_fk_columns"])
-              t_to_table  = row["t_pk_table"]
-              t_to_schema = row["t_pk_schema"]
+              t_to_table  = table.Table(row["t_pk_table"], row["t_pk_schema"])
               t_to_columns = sanitize_pg_array(row["t_pk_columns"])
 
-            if row["left_join"]:
-              this_join = join.LeftJoin(
-                t_from_table,
-                t_to_table,
-                t_from_schema,
-                t_to_schema,
-                t_from_columns,
-                t_to_columns)
-            else:
-              this_join = join.Join(
-                t_from_table,
-                t_to_table,
-                t_from_schema,
-                t_to_schema,
-                t_from_columns,
-                t_to_columns)
+            try:
+              from_table_pos = tables.index(t_from_table)
+            except ValueError:
+              tables.append(t_from_table)
+              from_table_pos = len(tables)-1
 
-            if this_join not in joins:
-              joins.append(this_join)
+            try:
+              to_table_pos = tables.index(t_to_table)
+            except ValueError:
+              tables.append(t_to_table)
+              to_table_pos = len(tables)-1
+
+            # build join condition
+            to_cols = tables[to_table_pos].prepend_alias(t_to_columns)
+            from_cols = tables[from_table_pos].prepend_alias(t_from_columns)
+
+            # always add the conditions to the last table, to avoid
+            # joins without conditions
+            tables[max(from_table_pos,to_table_pos)].joins += zip(to_cols, from_cols)
+
+            # set the join type,
+            if row["left_join"] == True and tables[max(from_table_pos,to_table_pos)].jointype != "join": 
+              # left joins are only set if there is not already a normal join
+              tables[max(from_table_pos,to_table_pos)].jointype = "left join"
+            else:
+              tables[max(from_table_pos,to_table_pos)].jointype = "join"
+
             break;
 
         last_node = next_node
 
   # build the join sql
   sql = StringIO.StringIO()
-  if len(joins) > 0:
-    sql.write(joins[0].toSql(is_first=True))
-    for this_join in joins[1:]:
+  if len(tables) > 0:
+    # print first table
+    sql.write(tables[0].fullname)
+    sql.write("\n")
+    for table in tables[1:]:
+      sql.write(table.joinsql)
       sql.write("\n")
-      sql.write(this_join.toSql())
 
   return sql.getvalue()
 
@@ -295,7 +311,7 @@ grant execute on function public.routejoin_route(oid[]) to public;
 create or replace function public.routejoin_version() 
 returns text 
 as $$
-from pg_routejoin import __version__
+from routejoin import __version__
 
 return __version__
 $$ language plpythonu;

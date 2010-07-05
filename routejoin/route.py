@@ -1,4 +1,4 @@
-from pg_routejoin import dijkstra, common
+from routejoin import dijkstra, common
 
 
 def route_network(G, nodes=[]):

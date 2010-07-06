@@ -284,6 +284,123 @@ alter function  public.routejoin_route(oid[]) owner to postgres;
 grant execute on function public.routejoin_route(oid[]) to public;
 
 
+create or replace function public.routejoin_route_left(table_oids_in oid[]) 
+returns text 
+as $$
+from routejoin import route, table, postgres, graph 
+import StringIO
+
+if type(table_oids_in) == str:
+  # at this point plpython does not seem to have
+  # native array parameter support
+  table_oids = map(int, postgres.sanitize_pg_array(table_oids_in))
+else:
+  # convert the table_oids to int
+  table_oids = map(int, table_oids_in)
+
+# get the list of routes
+q_routes = plpy.prepare(
+  """select * from public.routejoin_routes;""")
+defined_routes = plpy.execute(q_routes)
+
+# build the graph 
+G = graph.build_graph(defined_routes)
+
+try:
+  routes =  route.route_network(G, table_oids)
+
+  # using a set would be nice, but a set reorders its contents
+  joins = []
+  tables = []
+
+  for route in routes:
+    if len(route)>1: # should always be the case
+
+      last_node = route[0]
+      for next_node in route[1:]:
+        # find tables in the defined_routes
+        for row in defined_routes:
+          t_pk_oid = int(row["t_pk_oid"])
+          t_fk_oid = int(row["t_fk_oid"])
+          if ((t_pk_oid == last_node and t_fk_oid == next_node) or
+            (t_pk_oid == next_node and t_fk_oid == last_node)):
+
+            # keep the order of the tables in the join
+            if last_node == t_pk_oid:
+              t_from_table  = table.Table(row["t_pk_table"], row["t_pk_schema"])
+              t_from_columns = postgres.sanitize_pg_array(row["t_pk_columns"])
+              t_to_table  = table.Table(row["t_fk_table"], row["t_fk_schema"])
+              t_to_columns = postgres.sanitize_pg_array(row["t_fk_columns"])
+            else:
+              # always start from the first node of a route
+              if last_node != route[0]:
+                t_to_table  = table.Table(row["t_fk_table"], row["t_fk_schema"])
+                t_to_columns = postgres.sanitize_pg_array(row["t_fk_columns"])
+                t_from_table  = table.Table(row["t_pk_table"], row["t_pk_schema"])
+                t_from_columns = postgres.sanitize_pg_array(row["t_pk_columns"])
+              else:
+                t_from_table  = table.Table(row["t_fk_table"], row["t_fk_schema"])
+                t_from_columns = postgres.sanitize_pg_array(row["t_fk_columns"])
+                t_to_table  = table.Table(row["t_pk_table"], row["t_pk_schema"])
+                t_to_columns = postgres.sanitize_pg_array(row["t_pk_columns"])
+
+            try:
+              from_table_pos = tables.index(t_from_table)
+            except ValueError:
+              tables.append(t_from_table)
+              from_table_pos = len(tables)-1
+
+            try:
+              to_table_pos = tables.index(t_to_table)
+            except ValueError:
+              tables.append(t_to_table)
+              to_table_pos = len(tables)-1
+
+            # build join condition
+            to_cols = tables[to_table_pos].prepend_alias(t_to_columns)
+            from_cols = tables[from_table_pos].prepend_alias(t_from_columns)
+
+            # always add the conditions to the last table, to avoid
+            # joins without conditions
+            tables[max(from_table_pos,to_table_pos)].add_join(to_cols, from_cols)
+
+            # set the join type,
+            tables[max(from_table_pos,to_table_pos)].jointype = "left join"
+
+            break;
+
+        last_node = next_node
+
+  # build the join sql
+  sql = StringIO.StringIO()
+  if len(tables) > 0:
+    # print first table
+    sql.write(tables[0].fullname)
+    sql.write("\n")
+    for table in tables[1:]:
+      sql.write(table.joinsql)
+      sql.write("\n")
+
+  return sql.getvalue()
+
+except Exception, e:
+  plpy.error(str(e))
+
+$$ language plpythonu;
+alter function  public.routejoin_route_left(oid[]) owner to postgres;
+grant execute on function public.routejoin_route_left(oid[]) to public;
+comment on function  public.routejoin_route_left(oid[]) is '
+this function ignores the joint types specified in public.routejoin_routes
+and uses only left joins instead.
+
+The first table/view of the oid array is used as the "from" table, all
+the others are joined to it.
+
+This is probably useful for search queries when looking rows matching a
+criteria without loosing records without data in any of the joined tables.
+';
+
+
 
 create or replace function public.routejoin_version() 
 returns text 

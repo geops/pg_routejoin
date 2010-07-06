@@ -150,14 +150,16 @@ grant select on public.routejoin_oidlookup to public;
 create or replace function public.routejoin_vizz(table_oids_in oid[]) 
 returns text 
 as $$
-from routejoin import vizz
+from routejoin import vizz, postgres, graph
 
 if type(table_oids_in) == str:
-  # at this point plpython does not seem to have native array support
-  table_oids = map(int, table_oids_in.strip("{}").split(","))
+  # at this point plpython does not seem to have
+  # native array parameter support
+  table_oids = map(int, postgres.sanitize_pg_array(table_oids_in))
 else:
   # convert the table_oids to int
   table_oids = map(int, table_oids_in)
+
 
 # get the list of routes
 q_routes = plpy.prepare(
@@ -165,17 +167,7 @@ q_routes = plpy.prepare(
 defined_routes = plpy.execute(q_routes)
 
 # build the graph 
-G = {}
-for row in defined_routes:
-  t_fk_oid = int(row["t_fk_oid"])
-  t_pk_oid = int(row["t_pk_oid"])
-  if not G.has_key(t_fk_oid):
-    G[t_fk_oid] = {}
-  if not G.has_key(t_pk_oid):
-    G[t_pk_oid] = {}
-  G[t_fk_oid][t_pk_oid] = row["routing_cost"]
-  G[t_pk_oid][t_fk_oid] = row["routing_cost"]
-
+G = graph.build_graph(defined_routes)
 
 try:
   return vizz.route_vizz(G, table_oids)
@@ -191,18 +183,13 @@ grant execute on function public.routejoin_vizz(oid[]) to public;
 create or replace function public.routejoin_route(table_oids_in oid[]) 
 returns text 
 as $$
-from routejoin import route, table 
+from routejoin import route, table, postgres, graph 
 import StringIO
-
-
-def sanitize_pg_array(pg_array):
-  # only for one-dimesional arrays
-  return map(str.strip, pg_array.strip("{}").split(","))
 
 if type(table_oids_in) == str:
   # at this point plpython does not seem to have
   # native array parameter support
-  table_oids = map(int, sanitize_pg_array(table_oids_in))
+  table_oids = map(int, postgres.sanitize_pg_array(table_oids_in))
 else:
   # convert the table_oids to int
   table_oids = map(int, table_oids_in)
@@ -213,17 +200,7 @@ q_routes = plpy.prepare(
 defined_routes = plpy.execute(q_routes)
 
 # build the graph 
-G = {}
-for row in defined_routes:
-  t_fk_oid = int(row["t_fk_oid"])
-  t_pk_oid = int(row["t_pk_oid"])
-  if not G.has_key(t_fk_oid):
-    G[t_fk_oid] = {}
-  if not G.has_key(t_pk_oid):
-    G[t_pk_oid] = {}
-  G[t_fk_oid][t_pk_oid] = row["routing_cost"]
-  G[t_pk_oid][t_fk_oid] = row["routing_cost"]
-
+G = graph.build_graph(defined_routes)
 
 try:
   routes =  route.route_network(G, table_oids)
@@ -247,14 +224,14 @@ try:
             # keep the order of the tables in the join
             if last_node == t_pk_oid:
               t_from_table  = table.Table(row["t_pk_table"], row["t_pk_schema"])
-              t_from_columns = sanitize_pg_array(row["t_pk_columns"])
+              t_from_columns = postgres.sanitize_pg_array(row["t_pk_columns"])
               t_to_table  = table.Table(row["t_fk_table"], row["t_fk_schema"])
-              t_to_columns = sanitize_pg_array(row["t_fk_columns"])
+              t_to_columns = postgres.sanitize_pg_array(row["t_fk_columns"])
             else:
               t_from_table  = table.Table(row["t_fk_table"], row["t_fk_schema"])
-              t_from_columns = sanitize_pg_array(row["t_fk_columns"])
+              t_from_columns = postgres.sanitize_pg_array(row["t_fk_columns"])
               t_to_table  = table.Table(row["t_pk_table"], row["t_pk_schema"])
-              t_to_columns = sanitize_pg_array(row["t_pk_columns"])
+              t_to_columns = postgres.sanitize_pg_array(row["t_pk_columns"])
 
             try:
               from_table_pos = tables.index(t_from_table)

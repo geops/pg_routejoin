@@ -19,7 +19,7 @@ class MissingNodeError(Exception):
 
 class NotEnoughNodesError(Exception):
   def __str__(self):
-    return "need at least two nodes to join someting"
+    return "need at least two nodes to join something"
 
 
 class RoutingError(Exception):
@@ -32,5 +32,4 @@ class RoutingError(Exception):
 
   def __str__(self):
     return "No connection between node %d and node %d" % (self.node_start, self.node_end)
-
 

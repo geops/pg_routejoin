@@ -42,7 +42,7 @@ def route_vizz(G, nodes=[]):
     formating = ""
     # draw routed connections in red
     if row[0] in included_nodes and row[1] in included_nodes:
-      formating="[ color=\"red\"]"
+      formating="[color=\"red\"]"
 
     sio.write("  \"%d\" -- \"%d\" %s;\n" % (row[0], row[1], formating))
   sio.write("}\n")

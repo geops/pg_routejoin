@@ -29,11 +29,9 @@ Installation
 ============
 
 * install the Python module with
-
   ./setup.py install
 
 * create the plpythonu database language in your database
-
   create language plpythonu
 
 * import the sql/create.sql file in the database

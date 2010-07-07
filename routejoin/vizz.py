@@ -13,7 +13,7 @@ def route_vizz(G, nodes=[]):
 
   netw = route_network(G, nodes)
 
-  sio.write("graph route {\n")
+  sio.write("graph route {\n  fontsize=\"14\";\n")
 
   connection_nodes = []
   for route in netw:
@@ -34,17 +34,17 @@ def route_vizz(G, nodes=[]):
   # collect all existing connection from the graph
   all_connections = []
   for node, neighbor_dict in G.iteritems():
-    for neighbor in neighbor_dict.iterkeys():
-      if (neighbor, node) not in all_connections:
-        all_connections.append((node, neighbor))
+    for neighbor, cost in neighbor_dict.iteritems():
+      if (neighbor, node, cost) not in all_connections and (node, neighbor, cost) not in all_connections:
+        all_connections.append((node, neighbor, cost))
 
   for row in all_connections:
     formating = ""
     # draw routed connections in red
     if row[0] in included_nodes and row[1] in included_nodes:
-      formating="[color=\"red\"]"
+      formating="color=\"red\""
 
-    sio.write("  \"%d\" -- \"%d\" %s;\n" % (row[0], row[1], formating))
+    sio.write("  \"%d\" -- \"%d\" [ label=\"%d\" fontsize=\"8\" %s];\n" % (row[0], row[1], row[2], formating))
   sio.write("}\n")
   return sio.getvalue()
 

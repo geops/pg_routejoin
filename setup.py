@@ -22,6 +22,7 @@ class TestCommand(Command):
 
 setup(name="routejoin",
   version=versionstring,
+  license="MIT",
   packages=['routejoin'],
   cmdclass = {"test": TestCommand})
 

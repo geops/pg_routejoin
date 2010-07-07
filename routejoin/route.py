@@ -32,6 +32,7 @@ def route_network(G, nodes=[]):
         for neighbor in G[node].iterkeys():
           # reduce the cost by 50%
           G[neighbor][node] = int(G[neighbor][node]/2)
+          G[node][neighbor] = int(G[node][neighbor]/2)
       last_node = next_node
 
       routes.append(route)

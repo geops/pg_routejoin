@@ -1,19 +1,19 @@
 What it is...
 =============
 
-This projects offers database functions to dynamicly create
+This project offers database functions to dynamically create
 the SQL to join a list of tables and views.
 
-Theses joins are generated based on the constraints (foreignkeys)
+The joins are generated based on constraints (foreign keys) as
 defined in the database and are routed using [Dijkstra's algorithm](http://en.wikipedia.org/wiki/Dijkstra's_algorithm).
-Optionaly additional routes can be defined or ignored, for example
-for including views in the joins.
+Additional routes can be defined or others can be ignored, 
+for example for including views in the joins.
 
 
 Documentation
 =============
 
-See the comments of the functions and views in the 
+See the comments of functions and views in the 
 database.
 
 

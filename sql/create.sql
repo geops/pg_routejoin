@@ -108,6 +108,42 @@ left join public.routejoin_userdefined ru on
   ru.t_fk_table = rc.t_fk_table and
   ru.t_fk_columns = rc.t_fk_columns
 where ru.action is null
+except
+select 
+  pcpk.oid as t_pk_oid,
+  ru.t_pk_table,
+  ru.t_pk_schema,
+  ru.t_pk_columns,
+  pcfk.oid as t_fk_oid,
+  ru.t_fk_table,
+  ru.t_fk_schema,
+  ru.t_fk_columns,
+  ru.routing_cost,
+  ru.left_join
+from public.routejoin_userdefined ru
+join pg_catalog.pg_class pcpk on pcpk.relname = ru.t_pk_table
+join pg_catalog.pg_namespace pnpk on pcpk.relnamespace=pnpk.oid and pnpk.nspname=ru.t_pk_schema
+join pg_catalog.pg_class pcfk on pcfk.relname = ru.t_fk_table
+join pg_catalog.pg_namespace pfpk on pcfk.relnamespace=pfpk.oid and pfpk.nspname=ru.t_fk_schema
+where ru.action = 'ignore'
+except
+select --  switch the positions of "from" an "to" table
+  pcfk.oid as t_pk_oid,
+  ru.t_fk_table as t_pk_table,
+  ru.t_fk_schema as t_pk_schema,
+  ru.t_fk_columns as t_pk_columns,
+  pcpk.oid as t_fk_oid,
+  ru.t_pk_table as t_fk_table,
+  ru.t_pk_schema as t_fk_schema,
+  ru.t_pk_columns as t_fk_columns,
+  ru.routing_cost,
+  ru.left_join
+from public.routejoin_userdefined ru
+join pg_catalog.pg_class pcpk on pcpk.relname = ru.t_pk_table
+join pg_catalog.pg_namespace pnpk on pcpk.relnamespace=pnpk.oid and pnpk.nspname=ru.t_pk_schema
+join pg_catalog.pg_class pcfk on pcfk.relname = ru.t_fk_table
+join pg_catalog.pg_namespace pfpk on pcfk.relnamespace=pfpk.oid and pfpk.nspname=ru.t_fk_schema
+where ru.action = 'ignore'
 union 
 select 
   pcpk.oid as t_pk_oid,

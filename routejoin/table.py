@@ -1,5 +1,4 @@
 
-
 class Table(object):
     def __init__(self, name, schema):
         self.name = name

@@ -43,4 +43,4 @@ class Table(object):
     def joinsql(self):
         joinlist = list(self.joins)
         joined_columns = map(lambda x: " = ".join(x), joinlist)
-        return "%s %s on %s" % (self.jointype if self.join type != None else "join", self.fullname, ' and '.join(joined_columns))
+        return "%s %s on %s" % (self.jointype if self.jointype != None else "join", self.fullname, ' and '.join(joined_columns))

@@ -1,3 +1,9 @@
+pgroutejoin (0.2.3-6-2.wheezy) stable; urgency=low
+
+  * packaging for debian wheezy
+
+ -- Nico Mandery <mandery@geops.de>  Tue, 20 Aug 2013 13:30:00 +0200
+
 pgroutejoin (0.2.3-6-1) stable; urgency=low
 
   * Initial release

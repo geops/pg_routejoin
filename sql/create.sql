@@ -24,8 +24,9 @@ from
 				select 
 					pga.attname
 				from
-					generate_series(array_lower(pgcn.conkey,1), array_upper(pgcn.conkey,1)) as gs
-					join pg_catalog.pg_attribute pga on pga.attrelid = pgc.oid and pga.attnum = pgcn.conkey[gs]
+					generate_series(array_lower(pgcn.conkey,1), array_upper(pgcn.conkey,1)) as gs(gs)
+					join pg_catalog.pg_attribute pga on pga.attrelid = pgc.oid and pga.attnum = pgcn.conkey[gs.gs]
+                order by gs.gs
 			) as pk_columns
 
 		) as t_pk_columns,
@@ -34,8 +35,9 @@ from
 				select 
 					pga.attname
 				from
-					generate_series(array_lower(pgcn.confkey,1), array_upper(pgcn.confkey,1)) as gs
-					join pg_catalog.pg_attribute pga on pga.attrelid = pgcn.confrelid and pga.attnum = pgcn.confkey[gs]
+					generate_series(array_lower(pgcn.confkey,1), array_upper(pgcn.confkey,1)) as gs(gs)
+					join pg_catalog.pg_attribute pga on pga.attrelid = pgcn.confrelid and pga.attnum = pgcn.confkey[gs.gs]
+                order by gs.gs
 			) as fk_columns
 
 		) as t_fk_columns
